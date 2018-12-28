@@ -1,7 +1,7 @@
 ---
 bazel: latest
 buildifier:
-  version: latest
+  version: latest-1
   files:
     - "*.bzl"
     - "BUILD.bazel"
