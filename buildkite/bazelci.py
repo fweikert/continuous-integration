@@ -1099,7 +1099,7 @@ def create_buildifier_step(version, url, os="ubuntu1604"):
         "command": [
             "curl -L {} -o buildifier".format(url),
             "chmod +x buildifier",
-            "buildifier --lint=warn ."
+            "./buildifier --lint=warn ."
         ],
         "agents": {
             "kind": "worker",
