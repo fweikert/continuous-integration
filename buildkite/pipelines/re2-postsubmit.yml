@@ -1,6 +1,11 @@
 ---
 bazel: latest
-buildifier: latest
+buildifier:
+  version: latest
+  files:
+    - "*.bzl"
+    - "BUILD.bazel"
+    - "BUILD"
 platforms:
   ubuntu1404:
     build_targets:
