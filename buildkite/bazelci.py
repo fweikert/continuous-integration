@@ -1075,31 +1075,34 @@ def print_project_pipeline(configs, project_name, http_config, file_config,
     buildifier_step = get_buildifier_step_if_requested(configs)
     if buildifier_step:
         pipeline_steps.append(buildifier_step)
-        
+
     print(yaml.dump({"steps": pipeline_steps}))
 
 
 def get_buildifier_step_if_requested(configs):
-    version_from_config = configs.get("buildifier")
-    if not version_from_config:
+    buildifier = configs.get("buildifier")
+    if not buildifier:
         return None
 
+    version_from_config = buildifier.get("version", "latest")
     version, url = get_buildifier_version_and_url(version_from_config)
-    return create_buildifier_step(version, url)
-  
+    files = buildifier.get("files", ["BUILD", "*.bzl"])
+    return create_buildifier_step(version, url, files)
+
 
 def get_buildifier_version_and_url(version_from_config):
-    # TODO(fweikert)
+    # TODO(fweikert): actually compute the URL
     return "0.20.0", "https://github.com/bazelbuild/buildtools/releases/download/0.20.0/buildifier"
 
 
-def create_buildifier_step(version, url, os="ubuntu1604"):
+def create_buildifier_step(version, url, files, os="ubuntu1604"):
+    args = " -o ".join('-name "{}"'.format(f) for f in files)
     return {
         "label": "Buildifier {}".format(version),
         "command": [
             "curl -L {} -o buildifier".format(url),
             "chmod +x buildifier",
-            "./buildifier --lint=warn ."
+            "find ./ \( {} \) -exec ./buildifier --lint=warn {{}} \;".format(args)
         ],
         "agents": {
             "kind": "worker",
