@@ -18,6 +18,7 @@ import argparse
 import base64
 import codecs
 import datetime
+from distutils.version import LooseVersion
 import hashlib
 import json
 import multiprocessing
@@ -37,6 +38,7 @@ import uuid
 import yaml
 from github3 import login
 from urllib.request import url2pathname
+from urllib.request import urlopen
 from urllib.parse import urlparse
 
 # Initialize the random number generator.
@@ -280,6 +282,12 @@ PLATFORMS = {
         "java": "8"
     }
 }
+
+
+LATEST_VERSION_PATTERN = re.compile(r"latest(-(?P<offset>\d+))?$")
+
+
+BUILDIFIER_RELEASE_PAGE = "https://api.github.com/repos/bazelbuild/buildtools/releases"
 
 
 class BuildkiteException(Exception):
@@ -1091,8 +1099,44 @@ def get_buildifier_step_if_requested(configs):
 
 
 def get_buildifier_version_and_url(version_from_config):
-    # TODO(fweikert): actually compute the URL
-    return "0.20.0", "https://github.com/bazelbuild/buildtools/releases/download/0.20.0/buildifier"
+    releases = get_all_buildifier_releases()
+
+    requested_release = None
+    if "latest" in version_from_config:
+        requested_release = get_latest_buildifier_release(releases.values(), version_from_config)
+    else:
+        requested_release = releases.get(version_from_config)
+        if not requested_release:
+            raise BuildkiteException("There is no Buildifier version '{}'.".format(version_from_config))
+
+    urls = [a["browser_download_url"] for a in requested_release["assets"] if a["name"] == "buildifier"]
+    if not urls:
+        raise BuildkiteException("There is no download URL for Buildifier release '{}'.".format(version_from_config))
+
+    return requested_release["tag_name"], urls[0]
+
+
+def get_all_buildifier_releases():
+    res = urlopen("{}?{}".format(BUILDIFIER_RELEASE_PAGE, int(time.time()))).read()
+    return {r["tag_name"] : r for r in json.loads(res.decode('utf-8')) if not r['prerelease']}
+
+
+def get_latest_buildifier_release(releases, version_from_config):
+    match = LATEST_VERSION_PATTERN.match(version_from_config)
+    if not match:
+        raise BuildkiteException("Invalid version '{}'. In addition to using a version "
+                                 "number such as '0.20.0', you can use values such as "
+                                 "latest' and 'latest-N', with N being a non-negative "
+                                 "integer.".format(version_from_config))
+
+    offset = int(match.group("offset") or "0")
+    sorted_releases = sorted(releases, reverse=True, key= lambda r: LooseVersion(r["tag_name"]))
+    if offset >= len(sorted_releases):
+        version = "latest-{}".format(offset) if offset else "latest"
+        raise BuildkiteException("Cannot resolve version '{}': There are only {} Buildifier "
+                                 "releases.".format(version, len(sorted_releases))) 
+
+    return sorted_releases[offset]
 
 
 def create_buildifier_step(version, url, files, os="ubuntu1604"):
