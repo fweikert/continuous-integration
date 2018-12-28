@@ -1046,8 +1046,10 @@ def github_user_for_pull_request():
     return user[0]
 
 
-def print_project_pipeline(platform_configs, project_name, http_config, file_config,
+def print_project_pipeline(configs, project_name, http_config, file_config,
                            git_repository, monitor_flaky_tests, use_but):
+
+    platform_configs = configs.get("platforms", None)
     if not platform_configs:
         raise BuildkiteException("{0} pipeline configuration is empty.".format(project_name))
 
@@ -1070,7 +1072,40 @@ def print_project_pipeline(platform_configs, project_name, http_config, file_con
                            http_config, file_config, git_repository, monitor_flaky_tests, use_but)
         pipeline_steps.append(step)
 
+    buildifier_step = get_buildifier_step_if_requested(configs)
+    if buildifier_step:
+        pipeline_steps.append(buildifier_step)
+        
     print(yaml.dump({"steps": pipeline_steps}))
+
+
+def get_buildifier_step_if_requested(configs):
+    version_from_config = configs.get("buildifier")
+    if not version_from_config:
+        return None
+
+    version, url = get_buildifier_version_and_url(version_from_config)
+    return create_buildifier_step(version, url)
+  
+
+def get_buildifier_version_and_url(version_from_config):
+    # TODO(fweikert)
+    return "0.20.0", "https://github.com/bazelbuild/buildtools/releases/download/0.20.0/buildifier"
+
+
+def create_buildifier_step(version, url, os="ubuntu1604"):
+    return {
+        "label": "Buildifier {}".format(version),
+        "command": [
+            "curl -L {} -o buildifier".format(url),
+            "chmod +x buildifier",
+            "buildifier --lint=warn ."
+        ],
+        "agents": {
+            "kind": "worker",
+            "os": os
+        }
+    }
 
 
 def runner_step(platform, project_name=None, http_config=None,
@@ -1423,7 +1458,7 @@ def main(argv=None):
                                             file_config=args.file_config)
         elif args.subparsers_name == "project_pipeline":
             configs = fetch_configs(args.http_config, args.file_config)
-            print_project_pipeline(platform_configs=configs.get("platforms", None),
+            print_project_pipeline(configs=configs,
                                    project_name=args.project_name,
                                    http_config=args.http_config,
                                    file_config=args.file_config,
