@@ -148,3 +148,5 @@ buildifier:
   - "BUILD.bazel"
   - "BUILD"
 ```
+
+All values must be valid input for [find(1)](https://linux.die.net/man/1/find).
