@@ -1089,7 +1089,8 @@ def print_project_pipeline(configs, project_name, http_config, file_config,
 
 def get_buildifier_step_if_requested(configs):
     buildifier = configs.get("buildifier")
-    if not buildifier:
+    # An empty dictionary is allowed.
+    if buildifier is None:
         return None
 
     version_from_config = buildifier.get("version", "latest")
