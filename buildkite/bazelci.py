@@ -1140,19 +1140,33 @@ def get_latest_buildifier_release(releases, version_from_config):
 
 
 def create_buildifier_step(version, url, files, os="ubuntu1604"):
-    args = " -o ".join('-name "{}"'.format(f) for f in files)
     return {
         "label": "Buildifier {}".format(version),
         "command": [
             "curl -L {} -o buildifier".format(url),
-            "chmod +x buildifier",
-            "find ./ \( {} \) -exec ./buildifier --lint=warn {{}} \;".format(args)
+            create_buildifier_wrapper_command("lint.sh", files),
+            "chmod +x buildifier lint.sh",
+            "./lint.sh"
         ],
         "agents": {
             "kind": "worker",
             "os": os
         }
     }
+
+
+def create_buildifier_wrapper_command(wrapper_name, files_to_lint):
+    find_args = " -o ".join('-name "{}"'.format(f) for f in files_to_lint)
+    return """
+cat > {wrapper_name} <<EOF
+find ./ \( {find_args} \) -exec ./buildifier --lint=warn {{}} \+ | grep -q "."
+if [ "$?" -gt 0 ]
+then
+    echo "Lint errors."
+    exit 1
+fi
+EOF
+""".format(wrapper_name=wrapper_name, find_args=find_args)
 
 
 def runner_step(platform, project_name=None, http_config=None,
