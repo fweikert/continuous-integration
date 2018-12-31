@@ -1160,7 +1160,7 @@ def create_buildifier_wrapper_command(wrapper_name, files_to_lint):
     return """
 cat > {wrapper_name} <<EOF
 find ./ \( {find_args} \) -exec ./buildifier --lint=warn {{}} \+ | grep -q "."
-if [ "$?" -gt 0 ]
+if [ "$$?" -gt 0 ]
 then
     echo "Lint errors."
     exit 1
