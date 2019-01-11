@@ -386,7 +386,7 @@ def bazelcipy_url():
     """
     URL to the latest version of this script.
     """
-    return "https://raw.githubusercontent.com/bazelbuild/continuous-integration/master/buildkite/bazelci.py?{}".format(
+    return "https://raw.githubusercontent.com/fweikert/continuous-integration/nested2/buildkite/bazelci.py?{}".format(
         int(time.time())
     )
 
@@ -471,6 +471,11 @@ def execute_commands(
         else:
             git_repository = os.getenv("BUILDKITE_REPO")
 
+        if platform == "windows":
+            execute_batch_commands(config.get("batch_commands", None))
+        else:
+            execute_shell_commands(config.get("shell_commands", None))
+            
         if use_bazel_at_commit:
             print_collapsed_group(":gcloud: Downloading Bazel built at " + use_bazel_at_commit)
             bazel_binary = download_bazel_binary_at_commit(tmpdir, platform, use_bazel_at_commit)
@@ -489,10 +494,6 @@ def execute_commands(
             for flag in incompatible_flags:
                 eprint(flag + "\n")
 
-        if platform == "windows":
-            execute_batch_commands(config.get("batch_commands", None))
-        else:
-            execute_shell_commands(config.get("shell_commands", None))
         execute_bazel_run(
             bazel_binary, platform, config.get("run_targets", None), incompatible_flags
         )
