@@ -288,6 +288,8 @@ LATEST_VERSION_PATTERN = re.compile(r"latest(-(?P<offset>\d+))?$")
 
 
 BUILDIFIER_RELEASE_PAGE = "https://api.github.com/repos/bazelbuild/buildtools/releases"
+BUILDIFIER_DEFAULT_VERSION = "latest"
+BUILDIFIER_DEFAULT_INPUT_FILES = ["BUILD", "*.bzl"]
 
 
 class BuildkiteException(Exception):
@@ -1093,9 +1095,9 @@ def get_buildifier_step_if_requested(configs):
     if buildifier is None:
         return None
 
-    version_from_config = buildifier.get("version", "latest")
+    version_from_config = buildifier.get("version", BUILDIFIER_DEFAULT_VERSION)
     version, url = get_buildifier_version_and_url(version_from_config)
-    files = buildifier.get("files", ["BUILD", "*.bzl"])
+    files = buildifier.get("files", BUILDIFIER_DEFAULT_INPUT_FILES)
     return create_buildifier_step(version, url, files)
 
 
@@ -1145,9 +1147,8 @@ def create_buildifier_step(version, url, files, os="ubuntu1604"):
         "label": "Buildifier {}".format(version),
         "command": [
             "curl -L {} -o buildifier".format(url),
-            create_buildifier_wrapper_command("lint.sh", files),
-            "chmod +x buildifier lint.sh",
-            "./lint.sh"
+            "chmod +x buildifier",
+            create_buildifier_command(files)
         ],
         "agents": {
             "kind": "worker",
@@ -1156,18 +1157,9 @@ def create_buildifier_step(version, url, files, os="ubuntu1604"):
     }
 
 
-def create_buildifier_wrapper_command(wrapper_name, files_to_lint):
-    find_args = " -o ".join('-name "{}"'.format(f) for f in files_to_lint)
-    return """
-cat > {wrapper_name} <<EOF
-find ./ \( {find_args} \) -exec ./buildifier --lint=warn {{}} \+ | grep -q "."
-if [ "$$?" -gt 0 ]
-then
-    echo "Lint errors."
-    exit 1
-fi
-EOF
-""".format(wrapper_name=wrapper_name, find_args=find_args)
+def create_buildifier_command(files_to_lint):
+    find_args = " -or ".join('-iname "{}"'.format(f) for f in files_to_lint)
+    return "./buildifier --lint=warn $$(find . -type f \\( {} \\)) | grep -q \".\"".format(find_args) 
 
 
 def runner_step(platform, project_name=None, http_config=None,
