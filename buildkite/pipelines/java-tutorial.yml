@@ -1,0 +1,7 @@
+---
+platforms:
+  ubuntu1604:
+    shell_commands:
+    - cd java-tutorial
+    build_targets:
+    - "..."
