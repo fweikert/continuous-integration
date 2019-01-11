@@ -18,6 +18,7 @@ import argparse
 import base64
 import codecs
 import datetime
+from distutils.version import LooseVersion
 import hashlib
 import json
 import multiprocessing
@@ -36,6 +37,7 @@ import urllib.request
 import uuid
 import yaml
 from urllib.request import url2pathname
+from urllib.request import urlopen
 from urllib.parse import urlparse
 
 # Initialize the random number generator.
