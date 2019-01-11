@@ -2,6 +2,8 @@
 platforms:
   ubuntu1604:
     shell_commands:
+    - pwd
     - cd java-tutorial
+    - pwd
     build_targets:
     - "..."
