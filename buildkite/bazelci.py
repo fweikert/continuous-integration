@@ -1150,10 +1150,24 @@ def create_buildifier_step(version, url, files, os="ubuntu1604"):
             "chmod +x buildifier",
             create_buildifier_command(files)
         ],
-        "agents": {
-            "kind": "worker",
-            "os": os
-        }
+        "agents": {"kind": "docker", "os": "linux"},
+            "plugins": {
+                "philwo/docker": {
+                    "always-pull": True,
+                    "debug": True,
+                    "environment": ["BUILDKITE_ARTIFACT_UPLOAD_DESTINATION", "BUILDKITE_GS_ACL"],
+                    "image": "gcr.io/bazel-untrusted/ubuntu1804:java8",
+                    "privileged": True,
+                    "propagate-environment": True,
+                    "tmpfs": ["/home/bazel/.cache:exec,uid=999,gid=999"],
+                    "volumes": [
+                        ".:/workdir",
+                        "{0}:{0}".format("/var/lib/buildkite-agent/builds"),
+                        "{0}:{0}:ro".format("/var/lib/bazelbuild"),
+                    ],
+                    "workdir": "/workdir",
+                }
+            },
     }
 
 
