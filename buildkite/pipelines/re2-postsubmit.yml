@@ -4,6 +4,6 @@ platforms:
     shell_commands:
     - pwd
     - ls
-    - cd examples/java-tutorial
+    - cd java-tutorial
     build_targets:
     - "..."
