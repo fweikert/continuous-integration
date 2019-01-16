@@ -1,0 +1,10 @@
+---
+platforms:
+  ubuntu1604:
+    shell_commands:
+    - pwd
+    - cd java-tutorial
+    - pwd
+    - ls
+    build_targets:
+    - "..."
