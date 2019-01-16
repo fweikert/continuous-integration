@@ -1,5 +1,5 @@
 ---
-buildifier: false
+buildifier: 1
 platforms:
   ubuntu1404:
     build_targets:
