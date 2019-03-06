@@ -1348,6 +1348,13 @@ def print_project_pipeline(
     use_but,
     incompatible_flags,
 ):
+    envs = ["BUILDKITE_ORGANIZATION_SLUG", "BUILDKITE_PIPELINE_SLUG", "BUILDKITE_BUILD_NUMBER", "BUILDKITE_BUILD_ID"]
+    parts = ["{}: {}".format(e, os.environ.get(e)) for e in envs]
+    parts.append("BUILDKITE_AGENT_TOKEN: " + os.environ.get("BUILDKITE_AGENT_TOKEN", "")[:2])
+    parts.append("BUILDKITE_AGENT_ACCESS_TOKEN: " + os.environ.get("BUILDKITE_AGENT_ACCESS_TOKEN", "")[:2])
+    print("\n".join(parts))
+    raise BuildkiteException("NOPE")
+
     task_configs = configs.get("tasks", None)
     if not task_configs:
         raise BuildkiteException("{0} pipeline configuration is empty.".format(project_name))
