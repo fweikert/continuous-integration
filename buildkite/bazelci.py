@@ -928,7 +928,9 @@ def execute_bazel_run(bazel_binary, platform, targets, incompatible_flags):
     print_collapsed_group("Setup (Run Targets)")
     # When using bazelisk --migrate to test incompatible flags,
     # incompatible flags set by "INCOMPATIBLE_FLAGS" env var will be ignored.
-    incompatible_flags_to_use = [] if (use_bazelisk_migrate() or not incompatible_flags) else incompatible_flags
+    incompatible_flags_to_use = (
+        [] if (use_bazelisk_migrate() or not incompatible_flags) else incompatible_flags
+    )
     for target in targets:
         try:
             execute_command(
@@ -1143,11 +1145,16 @@ def execute_bazel_build(
         # incompatible flags set by "INCOMPATIBLE_FLAGS" env var will be ignored.
         [] if (use_bazelisk_migrate() or not incompatible_flags) else incompatible_flags,
         bep_file,
-        enable_remote_cache=True
+        enable_remote_cache=True,
     )
     try:
         execute_command(
-            [bazel_binary] + bazelisk_flags() + common_startup_flags(platform) + ["build"] + aggregated_flags + targets
+            [bazel_binary]
+            + bazelisk_flags()
+            + common_startup_flags(platform)
+            + ["build"]
+            + aggregated_flags
+            + targets
         )
     except subprocess.CalledProcessError as e:
         handle_bazel_failure(e, "build")
@@ -1180,12 +1187,17 @@ def execute_bazel_test(
         # incompatible flags set by "INCOMPATIBLE_FLAGS" env var will be ignored.
         [] if (use_bazelisk_migrate() or not incompatible_flags) else incompatible_flags,
         bep_file,
-        enable_remote_cache=not monitor_flaky_tests
+        enable_remote_cache=not monitor_flaky_tests,
     )
 
     try:
         execute_command(
-            [bazel_binary] + bazelisk_flags() + common_startup_flags(platform) + ["test"] + aggregated_flags + targets
+            [bazel_binary]
+            + bazelisk_flags()
+            + common_startup_flags(platform)
+            + ["test"]
+            + aggregated_flags
+            + targets
         )
     except subprocess.CalledProcessError as e:
         handle_bazel_failure(e, "test")
@@ -1348,12 +1360,15 @@ def print_project_pipeline(
     use_but,
     incompatible_flags,
 ):
-    envs = ["BUILDKITE_ORGANIZATION_SLUG", "BUILDKITE_PIPELINE_SLUG", "BUILDKITE_BUILD_NUMBER", "BUILDKITE_BUILD_ID"]
-    parts = ["{}: {}".format(e, os.environ.get(e)) for e in envs]
-    parts.append("BUILDKITE_AGENT_TOKEN: " + os.environ.get("BUILDKITE_AGENT_TOKEN", "")[:2])
-    parts.append("BUILDKITE_AGENT_ACCESS_TOKEN: " + os.environ.get("BUILDKITE_AGENT_ACCESS_TOKEN", "")[:2])
-    x = "\n".join(parts)
-    raise BuildkiteException(x)
+    foo_url = "https://api.buildkite.com/v2/organizations/{}/pipelines/{}/builds/{}?access_token={}".format(
+        os.environ.get("BUILDKITE_ORGANIZATION_SLUG"),
+        os.environ.get("BUILDKITE_PIPELINE_SLUG"),
+        os.environ.get("BUILDKITE_BUILD_NUMBER"),
+        os.environ.get("BUILDKITE_AGENT_ACCESS_TOKEN"),
+    )
+    output = urllib.request.urlopen(foo_url).read().decode("utf-8")
+    build_info = json.loads(output)
+    raise BuildkiteException(build_info)
 
     task_configs = configs.get("tasks", None)
     if not task_configs:
