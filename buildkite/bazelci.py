@@ -1352,8 +1352,8 @@ def print_project_pipeline(
     parts = ["{}: {}".format(e, os.environ.get(e)) for e in envs]
     parts.append("BUILDKITE_AGENT_TOKEN: " + os.environ.get("BUILDKITE_AGENT_TOKEN", "")[:2])
     parts.append("BUILDKITE_AGENT_ACCESS_TOKEN: " + os.environ.get("BUILDKITE_AGENT_ACCESS_TOKEN", "")[:2])
-    print("\n".join(parts))
-    raise BuildkiteException("NOPE")
+    x = "\n".join(parts)
+    raise BuildkiteException(x)
 
     task_configs = configs.get("tasks", None)
     if not task_configs:
