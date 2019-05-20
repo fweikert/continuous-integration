@@ -38,9 +38,7 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
 
     if test_rules_at_head:
         # TODO(fweikert): remove once implemented
-        if test_rules_at_head:
-            raise NotImplementedError("--test_rules_at_head isn't supported yet")
-        # TODO(fweikert): implement
+        raise NotImplementedError("--test_rules_at_head isn't supported yet")
         # for each repo/archive:
         #   fetch latest release
         #   store version
