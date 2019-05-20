@@ -29,10 +29,6 @@ BAZEL_VERSION_FILE = ".bazelversion"
 REPO_BZL_PATH = "repositories.bzl"
 
 
-def script_url(url):
-    return "{}?{}".format(url or DEFAULT_SCRIPT_URL, int(time.time()))
-
-
 def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, script_url):
     repositories, archives = parse_repositories_file()
 
@@ -50,6 +46,7 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
         raise NotImplementedError("--flip_incompatible_flags isn't supported yet")
 
     external_root = download_external_repositories()
+    pipeline_steps = []
     for kwargs in itertools.chain(repositories, archives):
         project = kwargs.get("name")
         if not project:
@@ -63,10 +60,21 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
                 "No configuration for project %s at %s" % (project, config_path)
             )
 
-        tasks = load_tasks_from_config(project, config_path)
-        for task_name, task_config in tasks.items():
-            pass
-            # TODO(fweikert): print steps
+        all_tasks = load_tasks_from_config(project, config_path)
+        for task, task_config in all_tasks.items():
+            platform = task_config.get("platform", task)
+            run_step = create_task_step(
+                project=project,
+                task=task,
+                platform=platform,
+                bazel_version=bazel_version,
+                test_rules_at_head=test_rules_at_head,
+                flip_incompatible_flags=flip_incompatible_flags,
+                script_url=script_url,
+            )
+            pipeline_steps.append(run_step)
+
+    bazelci.print_pipeline_steps(pipeline_steps)
 
 
 def parse_repositories_file():
@@ -171,7 +179,34 @@ def load_tasks_from_config(project, path):
     return tasks
 
 
-def run_task(project, task, bazel_version, test_rules_at_head, flip_incompatible_flags, script_url):
+def create_task_step(
+    project, task, platform, bazel_version, test_rules_at_head, flip_incompatible_flags, script_url
+):
+    command = "%s federation_ci.py" % bazelci.PLATFORMS[platform]["python"]
+    if bazel_version:
+        command += " --bazel_version=%s" % bazel_version
+    if test_rules_at_head:
+        command += " --test_rules_at_head=%s" % test_rules_at_head
+    if flip_incompatible_flags:
+        command += " --flip_incompatible_flags=%" % flip_incompatible_flags
+
+    command = "%s run --project=%s --task=%s" % (command, project, task)
+
+    label = bazelci.create_label(platform, project, task_name=task)
+    return bazelci.create_step(
+        label=label, commands=[fetch_script_command(script_url), command], platform=platform
+    )
+
+
+def fetch_script_command(raw_url):
+    return "curl -sS % -o bazelci.py" % get_script_url(raw_url)
+
+
+def get_script_url(raw_url):
+    return "{}?{}".format(raw_url or DEFAULT_SCRIPT_URL, int(time.time()))
+
+
+def run_task(project, task, bazel_version, test_rules_at_head, flip_incompatible_flags):
     if bazel_version:
         overwrite_bazel_version(bazel_version)
     if test_rules_at_head:
@@ -223,7 +258,6 @@ def main(argv=None):
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("--project", type=str)
     run_parser.add_argument("--task", type=str)
-    run_parser.add_argument("--rule_versions", type=str)
 
     args = parser.parse_args(argv)
 
