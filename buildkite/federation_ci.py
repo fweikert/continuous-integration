@@ -142,7 +142,7 @@ def download_external_repositories(project_filter=None):
     except subprocess.CalledProcessError as ex:
         raise bazelci.BuildkiteException("Failed to determine the output base directory: %s" % ex)
 
-    return os.path.join(output_base, "external")
+    return os.path.join(output_base.strip(), "external")
 
 
 def execute_command(args, error_message, ignored_exit_codes=()):
