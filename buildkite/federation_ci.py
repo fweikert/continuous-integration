@@ -24,12 +24,15 @@ import yaml
 
 
 CONFIG_PATH = ".bazelci/federation.yml"
-DEFAULT_SCRIPT_URL = "https://raw.githubusercontent.com/bazelbuild/continuous-integration/master/buildkite/federation_ci.py"
 BAZEL_VERSION_FILE = ".bazelversion"
 REPO_BZL_PATH = "repositories.bzl"
 
+SCRIPT_HOST = "https://raw.githubusercontent.com"
+DEFAULT_SCRIPT_SOURCE = "bazelbuild/continuous-integration/master"
+SCRIPT_FOLDER = "buildkite"
 
-def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, script_url):
+
+def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, script_src):
     bazelci.print_collapsed_group("Retrieving external dependencies from %s" % REPO_BZL_PATH)
     repositories, archives = parse_repositories_file()
 
@@ -71,7 +74,7 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
                 bazel_version=bazel_version,
                 test_rules_at_head=test_rules_at_head,
                 flip_incompatible_flags=flip_incompatible_flags,
-                script_url=script_url,
+                script_src=script_src,
             )
             pipeline_steps.append(run_step)
 
@@ -185,7 +188,7 @@ def load_tasks_from_config(project, path):
 
 
 def create_task_step(
-    project, task, platform, bazel_version, test_rules_at_head, flip_incompatible_flags, script_url
+    project, task, platform, bazel_version, test_rules_at_head, flip_incompatible_flags, script_src
 ):
     command = "%s federation_ci.py" % bazelci.PLATFORMS[platform]["python"]
     if bazel_version:
@@ -199,16 +202,25 @@ def create_task_step(
 
     label = bazelci.create_label(platform, project, task_name=task)
     return bazelci.create_step(
-        label=label, commands=[fetch_script_command(script_url), command], platform=platform
+        label=label,
+        commands=[
+            fetch_script_command(script_src, "bazelci.py"),
+            fetch_script_command(script_src, "federation_ci.py"),
+            command,
+        ],
+        platform=platform,
     )
 
 
-def fetch_script_command(raw_url):
-    return "curl -sS %s -o federation_ci.py" % get_script_url(raw_url)
+def fetch_script_command(script_src, file_name):
+    return "curl -sS %s -o %s" % (get_script_url(script_src, file_name), file_name)
 
 
-def get_script_url(raw_url):
-    return "{}?{}".format(raw_url or DEFAULT_SCRIPT_URL, int(time.time()))
+def get_script_url(script_src, file_name):
+    script_src = script_src.strip("/") if script_src else DEFAULT_SCRIPT_SOURCE
+    return "{}/{}/{}/{}?{}".format(
+        SCRIPT_HOST, script_src, SCRIPT_FOLDER, file_name, int(time.time())
+    )
 
 
 def get_platform_for_task(task_config, task_name):
@@ -299,7 +311,7 @@ def main(argv=None):
     subparsers = parser.add_subparsers(dest="subparsers_name")
 
     print_parser = subparsers.add_parser("print")
-    print_parser.add_argument("--script_url", type=str)
+    print_parser.add_argument("--script_src", type=str)
 
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("--project", type=str)
@@ -314,7 +326,7 @@ def main(argv=None):
             "flip_incompatible_flags": args.flip_incompatible_flags,
         }
         if args.subparsers_name == "print":
-            print_tasks(script_url=args.script_url, **common_kwargs)
+            print_tasks(script_src=args.script_src, **common_kwargs)
         elif args.subparsers_name == "run":
             run_task(project=args.project, task=args.task, **common_kwargs)
         else:
