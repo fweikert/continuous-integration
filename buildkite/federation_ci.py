@@ -96,7 +96,7 @@ def parse_repositories_file():
 
     try:
         with open(REPO_BZL_PATH, "r") as f:
-            eval(
+            exec(
                 f.read(),
                 {"__builtins__": None},
                 {
