@@ -114,7 +114,7 @@ def parse_repositories_file():
     return repositories, archives
 
 
-def download_external_repositories(project_filter):
+def download_external_repositories(project_filter=None):
     if project_filter:
         bazelci.print_collapsed_group("Downloading external repository '%s'" % project_filter)
         # Use "blaze query" to fetch the external repository, including the configuration file.
