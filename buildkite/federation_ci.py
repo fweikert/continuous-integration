@@ -79,6 +79,8 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
 
 
 def parse_repositories_file():
+    # TODO(fweikert): Use the Starlark parser to avoid exec()
+    # TODO(fweikert): Add a presubmit to bazel-federation that ensures that this code continues working.
     def fake_load(*args):
         pass
 
