@@ -62,11 +62,10 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
 
         all_tasks = load_tasks_from_config(project, config_path)
         for task, task_config in all_tasks.items():
-            platform = task_config.get("platform", task)
             run_step = create_task_step(
                 project=project,
                 task=task,
-                platform=platform,
+                platform=get_platform_for_task(task_config),
                 bazel_version=bazel_version,
                 test_rules_at_head=test_rules_at_head,
                 flip_incompatible_flags=flip_incompatible_flags,
@@ -75,6 +74,10 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
             pipeline_steps.append(run_step)
 
     bazelci.print_pipeline_steps(pipeline_steps)
+
+
+def get_platform_for_task(task_config):
+    return task_config.get("platform", task)
 
 
 def parse_repositories_file():
@@ -206,21 +209,39 @@ def get_script_url(raw_url):
     return "{}?{}".format(raw_url or DEFAULT_SCRIPT_URL, int(time.time()))
 
 
-def run_task(project, task, bazel_version, test_rules_at_head, flip_incompatible_flags):
+def run_task(project_name, task_name, bazel_version, test_rules_at_head, flip_incompatible_flags):
     if bazel_version:
         overwrite_bazel_version(bazel_version)
     if test_rules_at_head:
         overwrite_repositories_file()
 
-    external_root = download_external_repositories(project)
-    config_path = os.path.join(external_root, project, CONFIG_PATH)
+    external_root = download_external_repositories(project_name)
+    config_path = os.path.join(external_root, project_name, CONFIG_PATH)
     all_tasks = load_tasks_from_config(config_path)
-    if task not in all_tasks:
+    task_config = all_tasks.get(task_name)
+    if not task_config:
         raise bazelci.BuildkiteException(
-            "There is no task '%s' in configuration %s of project %s" % (task, config_path, project)
+            "There is no task '%s' in configuration %s of project %s"
+            % (task_name, config_path, project_name)
         )
 
-    # TODO(fweikert): actually do something
+    rewrite_local_targets(task_config, project_name)
+    bazelci.execute_commands(
+        task_config=task_config,
+        platform=get_platform_for_task(task_config),
+        git_repository=None,
+        git_commit=None,
+        git_repo_location=None,
+        use_bazel_at_commit=False,
+        use_but=False,
+        save_but=False,
+        needs_clean=False,
+        build_only=False,
+        test_only=False,
+        monitor_flaky_tests=False,
+        incompatible_flags=None,
+        bazel_version=None,
+    )
 
 
 def overwrite_bazel_version(bazel_version):
@@ -237,6 +258,25 @@ def overwrite_bazel_version(bazel_version):
 def overwrite_repositories_file():
     bazelci.print_collapsed_group("Downloading %s with rules at HEAD" % REPO_BZL_PATH)
     execute_command(["buildkite-agent", "artifact", "download", REPO_BZL_PATH, "."])
+
+
+def rewrite_local_targets(task_config, project_name):
+    for key in ("run_targets", "build_targets", "test_targets"):
+        for i, target in enumerate(task_config.get(key, ())):
+            task_config[key][i] = add_remote_target_prefix(target, project_name)
+
+
+def add_remote_target_prefix(target, project_name):
+    if target == "--":
+        return target
+
+    minus = ""
+    if target.startswith("-"):
+        minus = "-"
+        target = target[1:]
+
+    slashes = "" if target.startswith("//") else "//"
+    return "%s@%s%s%s" % (minus, project_name, slashes, target)
 
 
 def main(argv=None):
