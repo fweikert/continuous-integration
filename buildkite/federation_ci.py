@@ -30,6 +30,7 @@ REPO_BZL_PATH = "repositories.bzl"
 
 
 def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, script_url):
+    bazelci.print_collapsed_group("Retrieving external dependencies from %s" % REPO_BZL_PATH)
     repositories, archives = parse_repositories_file()
 
     if test_rules_at_head:
@@ -45,6 +46,7 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
         # TODO(fweikert): remove once implemented
         raise NotImplementedError("--flip_incompatible_flags isn't supported yet")
 
+    bazelci.print_collapsed_group("Printing pipeline steps")
     external_root = download_external_repositories()
     pipeline_steps = []
     for kwargs in itertools.chain(repositories, archives):
@@ -94,25 +96,27 @@ def parse_repositories_file():
         archives.append(kwargs)
 
     class FakeNativeModule(object):
-        def existing_rules():
+        def existing_rules(self):
             return ()
 
     try:
         with open(REPO_BZL_PATH, "r") as f:
-            exec(
-                f.read(),
-                {"__builtins__": None},
-                {
-                    "load": fake_load,
-                    "git_repository": fake_git_repository,
-                    "http_archive": fake_http_archive,
-                    "native": FakeNativeModule(),
-                },
-            )
+            content = f.read()
     except IOError as ex:
         raise bazelci.BuildkiteException(
             "Could not read repository file at %s: %s" % (REPO_BZL_PATH, ex)
         )
+
+    exec(
+        "%s\nrepositories()" % content,
+        {
+            "__builtins__": None,
+            "load": fake_load,
+            "git_repository": fake_git_repository,
+            "http_archive": fake_http_archive,
+            "native": FakeNativeModule(),
+        },
+    )
 
     return repositories, archives
 
