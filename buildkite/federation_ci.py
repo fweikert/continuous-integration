@@ -311,7 +311,12 @@ def main(argv=None):
     subparsers = parser.add_subparsers(dest="subparsers_name")
 
     print_parser = subparsers.add_parser("print")
-    print_parser.add_argument("--script_src", type=str)
+    print_parser.add_argument(
+        "--script_src",
+        type=str,
+        help="Source of the bazelci.py and federation_ci.py scripts that should run on CI. "
+        "Format: user/repo/branch",
+    )
 
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("--project", type=str)
