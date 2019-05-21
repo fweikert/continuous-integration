@@ -65,7 +65,7 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
             run_step = create_task_step(
                 project=project,
                 task=task,
-                platform=get_platform_for_task(task_config),
+                platform=get_platform_for_task(task_config, task),
                 bazel_version=bazel_version,
                 test_rules_at_head=test_rules_at_head,
                 flip_incompatible_flags=flip_incompatible_flags,
@@ -76,8 +76,8 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
     bazelci.print_pipeline_steps(pipeline_steps)
 
 
-def get_platform_for_task(task_config):
-    return task_config.get("platform", task)
+def get_platform_for_task(task_config, task_name):
+    return task_config.get("platform", task_name)
 
 
 def parse_repositories_file():
@@ -228,7 +228,7 @@ def run_task(project_name, task_name, bazel_version, test_rules_at_head, flip_in
     rewrite_local_targets(task_config, project_name)
     bazelci.execute_commands(
         task_config=task_config,
-        platform=get_platform_for_task(task_config),
+        platform=get_platform_for_task(task_config, task_name),
         git_repository=None,
         git_commit=None,
         git_repo_location=None,
