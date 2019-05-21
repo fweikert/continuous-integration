@@ -333,7 +333,7 @@ def main(argv=None):
         if args.subparsers_name == "print":
             print_tasks(script_src=args.script_src, **common_kwargs)
         elif args.subparsers_name == "run":
-            run_task(project=args.project, task=args.task, **common_kwargs)
+            run_task(project_name=args.project, task_name=args.task, **common_kwargs)
         else:
             parser.print_help()
             return 2
