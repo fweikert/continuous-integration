@@ -204,7 +204,7 @@ def create_task_step(
 
 
 def fetch_script_command(raw_url):
-    return "curl -sS % -o federation_ci.py" % get_script_url(raw_url)
+    return "curl -sS %s -o federation_ci.py" % get_script_url(raw_url)
 
 
 def get_script_url(raw_url):
