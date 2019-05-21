@@ -78,10 +78,6 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
     bazelci.print_pipeline_steps(pipeline_steps)
 
 
-def get_platform_for_task(task_config, task_name):
-    return task_config.get("platform", task_name)
-
-
 def parse_repositories_file():
     def fake_load(*args):
         pass
@@ -211,6 +207,10 @@ def fetch_script_command(raw_url):
 
 def get_script_url(raw_url):
     return "{}?{}".format(raw_url or DEFAULT_SCRIPT_URL, int(time.time()))
+
+
+def get_platform_for_task(task_config, task_name):
+    return task_config.get("platform", task_name)
 
 
 def run_task(project_name, task_name, bazel_version, test_rules_at_head, flip_incompatible_flags):
