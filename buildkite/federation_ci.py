@@ -126,13 +126,13 @@ def download_external_repositories(project_filter=None):
     if project_filter:
         bazelci.print_collapsed_group("Downloading external repository '%s'" % project_filter)
         # Use "blaze query" to fetch the external repository, including the configuration file.
-        # Query will fail with exit code 2 if the file wasn't exported (which is very likely), but we can
+        # Query will fail with exit code 7 if the file wasn't exported (which is very likely), but we can
         # ignore this error since the repository will have been downloaded anyway.
         target = "@%s//:%s" % (project_filter, CONFIG_PATH)
         execute_command(
             ["bazel", "query", target],
             error_message="Failed to query %s" % target,
-            ignored_exit_codes=[2],
+            ignored_exit_codes=[7],
         )
     else:
         bazelci.print_collapsed_group("Downloading all external repositories")
