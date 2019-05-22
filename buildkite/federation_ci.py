@@ -156,7 +156,8 @@ def execute_command(args, error_message, ignored_exit_codes=()):
         bazelci.execute_command(args)
     except subprocess.CalledProcessError as ex:
         if ex.returncode not in ignored_exit_codes:
-            raise bazelci.BuildkiteException("%s: %s" % (error_message, ex))
+            suffix = " - stderr:\n%s" % ex.stderr if ex.stderr else ""
+            raise bazelci.BuildkiteException("%s: %s%s" % (error_message, ex, suffix))
 
 
 def load_tasks_from_config(project, path):
