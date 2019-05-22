@@ -239,7 +239,7 @@ def run_task(project_name, task_name, bazel_version, test_rules_at_head, flip_in
 
     external_root = download_external_repositories(project_name)
     config_path = os.path.join(external_root, project_name, CONFIG_PATH)
-    all_tasks = load_tasks_from_config(config_path)
+    all_tasks = load_tasks_from_config(project_name, config_path)
     task_config = all_tasks.get(task_name)
     if not task_config:
         raise bazelci.BuildkiteException(
