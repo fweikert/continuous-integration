@@ -304,8 +304,8 @@ def overwrite_repositories_file():
 
 def rewrite_local_targets(task_config, project_name):
     for key in ("run_targets", "build_targets", "test_targets"):
-        for i, target in enumerate(task_config.get(key, ())):
-            task_config[key][i] = add_remote_target_prefix(target, project_name)
+        targets = task_config.get(key, [])
+        task_config[key] = [add_remote_target_prefix(t, project_name) for t in targets]
 
 
 def add_remote_target_prefix(target, project_name):
