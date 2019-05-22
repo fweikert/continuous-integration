@@ -17,6 +17,7 @@ import argparse
 import bazelci
 import itertools
 import os
+import re
 import subprocess
 import sys
 import time
@@ -30,6 +31,8 @@ REPO_BZL_PATH = "repositories.bzl"
 SCRIPT_HOST = "https://raw.githubusercontent.com"
 DEFAULT_SCRIPT_SOURCE = "bazelbuild/continuous-integration/master"
 SCRIPT_FOLDER = "buildkite"
+
+EXTERNAL_REPO_PREFIX_PATTERN = re.compile(r"^@([^/]+)//")
 
 
 def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, script_src):
@@ -313,6 +316,12 @@ def add_remote_target_prefix(target, project_name):
     if target.startswith("-"):
         minus = "-"
         target = target[1:]
+
+    # Rewrite labels of targets that are in external repositories of the project.
+    # For example, if the target @examples//fibonacci:fibonacci_doc_test is referenced
+    # by rules_rust, it becomes @io_bazel_rules_rust//examples/fibonacci:fibonacci_doc_test.
+    # It's probably a bug in Bazel that the new label is allowed at all.
+    target = EXTERNAL_REPO_PREFIX_PATTERN.sub(r"\1/", target)
 
     slashes = "" if target.startswith("//") else "//"
     return "%s@%s%s%s" % (minus, project_name, slashes, target)
