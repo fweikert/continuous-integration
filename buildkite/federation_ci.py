@@ -204,7 +204,8 @@ def create_task_step(
 
     command = "%s run --project=%s --task=%s" % (command, project, task)
 
-    label = bazelci.create_label(platform, project, task_name=task)
+    emoji = get_emoji_for_platform(platform)
+    label = bazelci.create_label(platform, "%s %s" % (emoji, project) if emoji else project)
     return bazelci.create_step(
         label=label,
         commands=[
@@ -214,6 +215,19 @@ def create_task_step(
         ],
         platform=platform,
     )
+
+
+def get_emoji_for_platform(platform):
+    if platform.startswith("rbe"):
+        return ":gcloud:"
+    elif platform.startswith("ubuntu"):
+        return ":ubuntu:"
+    elif platform == "macos":
+        return ":darwin:"
+    elif platform == "windows":
+        return ":windows:"
+    else:
+        return ""
 
 
 def fetch_script_command(script_src, file_name):
