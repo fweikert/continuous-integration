@@ -43,7 +43,7 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
         #   fetch latest release
         #   store version
         # rewrite repo file
-        # execute_command(["buildkite-agent", "artifact", "upload", REPO_BZL_PATH])
+        # execute_command(["buildkite-agent", "artifact", "upload", REPO_BZL_PATH], error_message="Failed to upload %s" % REPO_BZL_PATH)
 
     if flip_incompatible_flags:
         # TODO(fweikert): remove once implemented
@@ -128,8 +128,11 @@ def download_external_repositories(project_filter=None):
         # Use "blaze query" to fetch the external repository, including the configuration file.
         # Query will fail with exit code 2 if the file wasn't exported (which is very likely), but we can
         # ignore this error since the repository will have been downloaded anyway.
+        target = "@%s//:%s" % (project_filter, CONFIG_PATH)
         execute_command(
-            ["bazel", "query", "@%s//:%s" % (project_filter, CONFIG_PATH)], ignored_exit_codes=[2]
+            ["bazel", "query", target],
+            error_message="Failed to query %s" % target,
+            ignored_exit_codes=[2],
         )
     else:
         bazelci.print_collapsed_group("Downloading all external repositories")
@@ -275,7 +278,10 @@ def overwrite_bazel_version(bazel_version):
 
 def overwrite_repositories_file():
     bazelci.print_collapsed_group("Downloading %s with rules at HEAD" % REPO_BZL_PATH)
-    execute_command(["buildkite-agent", "artifact", "download", REPO_BZL_PATH, "."])
+    execute_command(
+        ["buildkite-agent", "artifact", "download", REPO_BZL_PATH, "."],
+        error_message="Failed to download %s" % REPO_BZL_PATH,
+    )
 
 
 def rewrite_local_targets(task_config, project_name):
