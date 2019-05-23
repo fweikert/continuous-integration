@@ -24,7 +24,7 @@ import time
 import yaml
 
 
-CONFIG_PATH = ".bazelci/federation.yml"
+CONFIG_PATHS = [".bazelci/federation.yml", ".bazelci/presubmit.yml"]
 BAZEL_VERSION_FILE = ".bazelversion"
 REPO_BZL_PATH = "repositories.bzl"
 
@@ -62,7 +62,7 @@ def print_tasks(bazel_version, test_rules_at_head, flip_incompatible_flags, scri
                 "Malformed %s file: Missing key 'name'" % (REPO_BZL_PATH)
             )
 
-        config_path = os.path.join(external_root, project, CONFIG_PATH)
+        config_path = get_config_path(external_root, project)
         if not os.path.exists:
             raise bazelci.BuildkiteException(
                 "No configuration for project %s at %s" % (project, config_path)
@@ -131,7 +131,7 @@ def download_external_repositories(project_filter=None):
         # Use "blaze query" to fetch the external repository, including the configuration file.
         # Query will fail with exit code 7 if the file wasn't exported (which is very likely), but we can
         # ignore this error since the repository will have been downloaded anyway.
-        target = "@%s//:%s" % (project_filter, CONFIG_PATH)
+        target = "@%s//:%s" % (project_filter, CONFIG_PATHS[0])
         execute_command(
             ["bazel", "query", target],
             error_message="Failed to query %s" % target,
@@ -161,6 +161,13 @@ def execute_command(args, error_message, ignored_exit_codes=()):
         if ex.returncode not in ignored_exit_codes:
             suffix = " - stderr:\n%s" % ex.stderr if ex.stderr else ""
             raise bazelci.BuildkiteException("%s: %s%s" % (error_message, ex, suffix))
+
+
+def get_config_path(external_root, project):
+    for cfg in CONFIG_PATHS:
+        full_path = os.path.join(external_root, project, cfg)
+        if os.path.exists(full_path):
+            return full_path
 
 
 def load_tasks_from_config(project, path):
@@ -255,7 +262,7 @@ def run_task(project_name, task_name, bazel_version, test_rules_at_head, flip_in
         overwrite_repositories_file()
 
     external_root = download_external_repositories(project_name)
-    config_path = os.path.join(external_root, project_name, CONFIG_PATH)
+    config_path = get_config_path(external_root, project_name)
     all_tasks = load_tasks_from_config(project_name, config_path)
     task_config = all_tasks.get(task_name)
     if not task_config:
