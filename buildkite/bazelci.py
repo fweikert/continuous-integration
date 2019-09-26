@@ -1914,6 +1914,15 @@ def print_project_pipeline(
     if "validate_config" in configs:
         pipeline_steps += create_config_validation_steps(script_org, script_branch)
 
+    if use_bazelisk_migrate() and not is_downstream_project:
+        # Print results of bazelisk --migrate in project pipelines that explicitly set
+        # the USE_BAZELISK_MIGRATE env var, but that are not being run as part of a
+        # downstream pipeline.
+        number = os.getenv("BUILDKITE_BUILD_NUMBER")
+        pipeline_steps += get_steps_for_aggregating_migration_results(
+            number, script_org, script_branch
+        )
+
     print_pipeline_steps(
         pipeline_steps, script_org, script_branch, handle_emergencies=not is_downstream_project
     )
@@ -2447,23 +2456,8 @@ def print_bazel_downstream_pipeline(
         if not current_build_number:
             raise BuildkiteException("Not running inside Buildkite")
         if use_bazelisk_migrate():
-            parts = [
-                PLATFORMS[DEFAULT_PLATFORM]["python"],
-                "aggregate_incompatible_flags_test_result.py",
-                "--build_number=%s" % current_build_number,
-                "--pipeline=%s" % os.getenv("BUILDKITE_PIPELINE_SLUG"),
-            ]
-            pipeline_steps.append({"wait": "~", "continue_on_failure": "true"})
-            pipeline_steps.append(
-                create_step(
-                    label="Aggregate incompatible flags test result",
-                    commands=[
-                        fetch_bazelci_command,
-                        fetch_aggregate_incompatible_flags_test_result_command(script_org, script_branch),
-                        " ".join(parts),
-                    ],
-                    platform=DEFAULT_PLATFORM,
-                ),
+            pipeline_steps += get_steps_for_aggregating_migration_results(
+                current_build_number, script_org, script_branch
             )
         else:
             pipeline_steps.append({"wait": "~", "continue_on_failure": "true"})
@@ -2505,6 +2499,27 @@ def print_bazel_downstream_pipeline(
         )
 
     print_pipeline_steps(pipeline_steps, script_org, script_branch)
+
+
+def get_steps_for_aggregating_migration_results(current_build_number, script_org, script_branch):
+    parts = [
+        PLATFORMS[DEFAULT_PLATFORM]["python"],
+        "aggregate_incompatible_flags_test_result.py",
+        "--build_number=%s" % current_build_number,
+        "--pipeline=%s" % os.getenv("BUILDKITE_PIPELINE_SLUG"),
+    ]
+    return [
+        {"wait": "~", "continue_on_failure": "true"},
+        create_step(
+            label="Aggregate incompatible flags test result",
+            commands=[
+                fetch_bazelcipy_command(script_org, script_branch),
+                fetch_aggregate_incompatible_flags_test_result_command(script_org, script_branch),
+                " ".join(parts),
+            ],
+            platform=DEFAULT_PLATFORM,
+        ),
+    ]
 
 
 def bazelci_builds_download_url(platform, git_commit):
