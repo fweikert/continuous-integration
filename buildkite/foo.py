@@ -4,7 +4,7 @@ os.environ["BUILDKITE_PIPELINE_SLUG"] = "foo"
 
 import aggregate_incompatible_flags_test_result
 
-issue_client = aggregate_incompatible_flags_test_result.GitHubIssueClient("bazel-flag-bot", "7e0c11d48b53cda8ec86977a599c9ba901cad3a9")
+issue_client = aggregate_incompatible_flags_test_result.GitHubIssueClient("bazel-flag-bot", "")
 
 #i = client.get_issue("fweikert", "bugs", aggregate_incompatible_flags_test_result.get_final_issue_title("Envoy", "3.0", "--incompatible_load_cc_rules_from_bzl"))
 #print(i)
