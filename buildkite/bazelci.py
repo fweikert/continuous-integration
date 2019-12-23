@@ -55,16 +55,16 @@ GITHUB_BRANCH = {"bazel": "master", "bazel-trusted": "master", "bazel-testing": 
     BUILDKITE_ORG
 ]
 
-SCRIPT_URL = "https://raw.githubusercontent.com/bazelbuild/continuous-integration/{}/buildkite/bazelci.py?{}".format(
-    GITHUB_BRANCH, int(time.time())
+SCRIPT_URL = "https://raw.githubusercontent.com/fweikert/continuous-integration/{}/buildkite/bazelci.py?{}".format(
+    "set", int(time.time())
 )
 
 INCOMPATIBLE_FLAG_VERBOSE_FAILURES_URL = "https://raw.githubusercontent.com/bazelbuild/continuous-integration/{}/buildkite/incompatible_flag_verbose_failures.py?{}".format(
     GITHUB_BRANCH, int(time.time())
 )
 
-AGGREGATE_INCOMPATIBLE_TEST_RESULT_URL = "https://raw.githubusercontent.com/bazelbuild/continuous-integration/{}/buildkite/aggregate_incompatible_flags_test_result.py?{}".format(
-    GITHUB_BRANCH, int(time.time())
+AGGREGATE_INCOMPATIBLE_TEST_RESULT_URL = "https://raw.githubusercontent.com/fweikert/continuous-integration/{}/buildkite/aggregate_incompatible_flags_test_result.py?{}".format(
+    "set", int(time.time())
 )
 
 EMERGENCY_FILE_URL = "https://raw.githubusercontent.com/bazelbuild/continuous-integration/{}/buildkite/emergency.yml?{}".format(
@@ -2364,6 +2364,8 @@ def print_bazel_downstream_pipeline(
         incompatible_flags = list(incompatible_flags_map.keys())
 
     for project, config in DOWNSTREAM_PROJECTS.items():
+        if project != "Envoy":
+            continue
         disabled_reason = config.get("disabled_reason", None)
         # If test_disabled_projects is true, we add configs for disabled projects.
         # If test_disabled_projects is false, we add configs for not disabled projects.
