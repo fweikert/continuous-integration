@@ -2364,7 +2364,7 @@ def print_bazel_downstream_pipeline(
         incompatible_flags = list(incompatible_flags_map.keys())
 
     for project, config in DOWNSTREAM_PROJECTS.items():
-        if project != "Envoy":
+        if project != "Buildfarm":
             continue
         disabled_reason = config.get("disabled_reason", None)
         # If test_disabled_projects is true, we add configs for disabled projects.
