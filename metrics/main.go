@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bazelbuild/continuous-integration/metrics/clients"
+	"github.com/bazelbuild/continuous-integration/metrics/data"
 	"github.com/bazelbuild/continuous-integration/metrics/metrics"
 	"github.com/bazelbuild/continuous-integration/metrics/publishers"
 	"github.com/bazelbuild/continuous-integration/metrics/service"
@@ -110,7 +111,7 @@ func main() {
 		criticalPath := metrics.CreateCriticalPath(bk, 20, pipelines...)
 		srv.AddMetric(criticalPath, minutes(60), defaultPublisher)
 	*/
-	dailyPerformance := metrics.CreateDailyPerformance(bk, 100, pipelines...)
+	dailyPerformance := metrics.CreateDailyPerformance(bk, 20000, &data.PipelineID{Org: "bazel", Slug: "google-bazel-presubmit"})
 	srv.AddMetric(dailyPerformance, minutes(60), defaultPublisher)
 	/*
 		flakiness := metrics.CreateFlakiness(storageClient, "bazel-buildkite-stats", "flaky-tests-bep", pipelines...)
