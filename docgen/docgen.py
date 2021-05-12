@@ -101,6 +101,12 @@ def rewrite_and_copy(src_root, dest_root, rewrite):
                 with open(src_file, "r", encoding="utf-8") as src:
                     content = src.read()
 
+                if src_file.endswith("aquery.html"):
+                    print("OLD")
+                    print(content)
+                    print("NEW")
+                    print(rewrite(content))
+
                 with open(dest_file, "w", encoding="utf-8") as dest:
                     dest.write(rewrite(content))
             else:
