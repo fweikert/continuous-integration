@@ -108,23 +108,18 @@ def create_instance(instance_name, params):
         network_params = {}
         if "network_interface" in params:
             if "network" in params:
-                print(
-                    f"Config error: {instance_name} has both 'network' and "
-                    "'network_interface', which are mutually exclusive.",
-                    file=sys.stdout,
-                )
+                print(f"Config error: {instance_name} has both 'network' and 'network_interface', which are mutually exclusive.", file=sys.stdout)
                 exit(1)
 
             network_params["network_interface"] = params["network_interface"]
         else:
-            network_params["network"] = (params.get("network", "default"),)
+            network_params["network"] = params.get("network", "default"),
 
         gcloud.create_instance(
             instance_name,
             project=params["project"],
             zone=params["zone"],
             machine_type=params.get("machine_type", DEFAULT_MACHINE_TYPE),
-            network=params.get("network", "default"),
             metadata_from_file=startup_script,
             boot_disk_type="pd-ssd",
             boot_disk_size=params.get("boot_disk_size", DEFAULT_BOOT_DISK_SIZE),
