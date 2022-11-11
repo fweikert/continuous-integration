@@ -37,3 +37,6 @@ docker buildx build --push -f ubuntu1804/Dockerfile --target ubuntu1804-bazel-ja
 docker buildx build --push -f ubuntu2004/Dockerfile --target ubuntu2004-bazel-java11     --platform linux/arm64,linux/amd64 -t "gcr.io/$PREFIX/ubuntu2004-bazel-java11" ubuntu2004
 docker buildx build --push -f ubuntu2004/Dockerfile --target ubuntu2004-java11-kythe     --platform linux/arm64,linux/amd64 -t "gcr.io/$PREFIX/ubuntu2004-java11-kythe" ubuntu2004
 docker buildx build --push -f ubuntu2204/Dockerfile --target ubuntu2204-bazel-java17     --platform linux/arm64,linux/amd64 -t "gcr.io/$PREFIX/ubuntu2204-bazel-java17" ubuntu2204
+
+docker buildx stop cibuilder
+docker buildx rm cibuilder
