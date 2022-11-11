@@ -15,8 +15,8 @@ case $(git symbolic-ref --short HEAD) in
         exit 1
 esac
 
-docker buildx builder prune -a -f
-docker buildx buildx create --name cibuilder --use
+docker builder prune -a -f
+docker buildx create --name cibuilder --use
 
 # Containers used by Bazel CI
 docker buildx build -f centos7/Dockerfile    --target centos7           --platform linux/arm64,linux/amd64 -t "gcr.io/$PREFIX/centos7" centos7 &
