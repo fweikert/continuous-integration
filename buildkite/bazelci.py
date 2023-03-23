@@ -3144,6 +3144,32 @@ def bazelci_last_green_downstream_commit_url():
     return "gs://{}/last_green_commit/downstream_pipeline".format(bucket_name)
 
 
+def bazelci_downstream_failing_jobs_history_url(pipeline_slug):
+    bucket_name = "bazel-testing-builds" if THIS_IS_TESTING else "bazel-untrusted-builds"
+    return "gs://{}/downstream_job_failures/{}.json".format(bucket_name, pipeline_slug)
+
+
+def process_downstream_failures():
+    failing_jobs = get_failing_jobs_for_current_pipeline()
+    
+    gcs_url = bazelci_downstream_failing_jobs_history_url()
+    # read file -> parse into dict(job name -> build number)
+    existing_failures = {}
+
+    for fixed_job in set(existing_failures).difference(failing_jobs):
+        existing_failures.pop(fixed_job)
+
+    org_slug , pipeline_slug, build_number = get_current_build_ids()
+    for already_failing_job, first_failing_build in existing_failures.items():
+        s = "{0}: already failing since <a href='https://buildkite.com/{1}/{2}/builds/{3}'>#{3}</a>".format(already_failing_job, org_slug, pipeline_slug, build_number)
+
+    for newly_failing_job in set(failing_jobs).difference(existing_failures.keys()):
+        existing_failures[newly_failing_job] = build_number
+        s = ""
+    # print annotation
+    # upload new file
+
+
 def get_last_green_commit(last_green_commit_url):
     try:
         return (
@@ -3157,10 +3183,12 @@ def get_last_green_commit(last_green_commit_url):
         return None
 
 
-def try_update_last_green_commit():
-    org_slug = os.getenv("BUILDKITE_ORGANIZATION_SLUG")
-    pipeline_slug = os.getenv("BUILDKITE_PIPELINE_SLUG")
-    build_number = os.getenv("BUILDKITE_BUILD_NUMBER")
+def get_current_build_ids():
+    return (os.getenv("BUILDKITE_ORGANIZATION_SLUG"), os.getenv("BUILDKITE_PIPELINE_SLUG"), os.getenv("BUILDKITE_BUILD_NUMBER"))
+    
+
+def get_failing_jobs_for_current_pipeline():
+    org_slug , pipeline_slug, build_number = get_current_build_ids()
     current_job_id = os.getenv("BUILDKITE_JOB_ID")
 
     client = BuildkiteClient(org=org_slug, pipeline=pipeline_slug)
@@ -3179,13 +3207,19 @@ def try_update_last_green_commit():
         )
 
     failing_jobs = [j["name"] for j in build_info["jobs"] if has_failed(j)]
+    return failing_jobs
+
+
+def try_update_last_green_commit():
+    failing_jobs = get_failing_jobs_for_current_pipeline()
     if failing_jobs:
         raise BuildkiteException(
             "Cannot update last green commit due to {} failing step(s): {}".format(
-                len(failing_jobs), ", ".join(failing_jobs)
+                len(failing_jobs), ", ".join(sorted(failing_jobs))
             )
         )
 
+    _ , pipeline_slug, _ = get_current_build_ids()
     git_repository = os.getenv("BUILDKITE_REPO")
     last_green_commit_url = bazelci_last_green_commit_url(git_repository, pipeline_slug)
     update_last_green_commit_if_newer(last_green_commit_url)
