@@ -2943,6 +2943,7 @@ def print_project_pipeline(
 # TODO(https://github.com/bazelbuild/continuous-integration/issues/1800): Remove once we've processed the backlog of high-priority tasks.
 def is_high_priority_backlog_task():
     return os.getenv("BUILDKITE_REPO") in (
+        "https://github.com/bazelbuild/bazel",
         "https://github.com/bazelbuild/bazel.git",
         "https://bazel.googlesource.com/bazel.git",
     ) and not os.getenv("BUILDKITE_PULL_REQUEST_REPO")
