@@ -220,7 +220,7 @@ EOF
       "platforms;android-29" \
       "platforms;android-30" \
       "platforms;android-31" \
-      "platforms;android-32"  > /dev/null
+      "platforms;android-32" > /dev/null
 }
 
 ### Fix permissions in /opt.
