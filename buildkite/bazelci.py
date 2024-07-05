@@ -909,6 +909,8 @@ P9w8kNhEbw==
 
 
 def decrypt_token(encrypted_token, kms_key, project="bazel-untrusted"):
+    eprint("ENVENV")
+    eprint(os.environ)
     return (
         subprocess.check_output(
             [
