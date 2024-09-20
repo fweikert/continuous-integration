@@ -56,7 +56,8 @@ steps:
       echo "release_name = \"\$release_name\""
 
       curl -sS "https://raw.githubusercontent.com/fweikert/continuous-integration/trusted-cache-test/buildkite/bazelci.py?$(date +%s)" -o bazelci.py
-      REMOTE_FLAGS=$(python3 -c "import bazelci; print(' '.join(bazelci.remote_caching_flags('macos')));")
+      python3 -c "import bazelci; print(' '.join(bazelci.remote_caching_flags('macos')))"
+      REMOTE_FLAGS=$(python3 -c "import bazelci; print(' '.join(bazelci.remote_caching_flags('macos')))")
 
       bazel build "${REMOTE_FLAGS}" //src:bazel
       mkdir output
