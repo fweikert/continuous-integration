@@ -173,7 +173,7 @@ steps:
       release_name=$(buildkite-agent meta-data get "release_name")
       echo "release_name = \"\$release_name\""
 
-      curl -sS "https://raw.githubusercontent.com/fweikert/continuous-integration/trusted-cache/buildkite/bazelci.py?$(date +%s)" -o bazelci.py
+      curl -sS "https://raw.githubusercontent.com/bazelbuild/continuous-integration/master/buildkite/bazelci.py?$(date +%s)" -o bazelci.py
       REMOTE_FLAGS=$(python3 -c "import bazelci; print(' '.join(remote_caching_flags('macos')));")
 
       bazel build "${REMOTE_FLAGS}" //src:bazel
@@ -208,7 +208,7 @@ steps:
       release_name=$(buildkite-agent meta-data get "release_name")
       echo "release_name = \"\$release_name\""
 
-      curl -sS "https://raw.githubusercontent.com/fweikert/continuous-integration/trusted-cache/buildkite/bazelci.py?$(date +%s)" -o bazelci.py
+      curl -sS "https://raw.githubusercontent.com/bazelbuild/continuous-integration/master/buildkite/bazelci.py?$(date +%s)" -o bazelci.py
       REMOTE_FLAGS=$(python3 -c "import bazelci; print(' '.join(remote_caching_flags('macos_arm64')));")
 
       bazel build "${REMOTE_FLAGS}" //src:bazel

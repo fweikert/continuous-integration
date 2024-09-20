@@ -1855,7 +1855,7 @@ def execute_bazel_run(bazel_binary, platform, targets):
             handle_bazel_failure(e, "run")
 
 
-# Be careful when updating this function - it's called from pipelines/bazel-release.yml,
+# Be careful when updating this function - it's called from pipelines/bazel-release.yml, too.
 def remote_caching_flags(platform, accept_cached=True):
     # Only enable caching for untrusted and testing builds, except for trusted MacOS VMs.
     if THIS_IS_TRUSTED and not is_mac():
