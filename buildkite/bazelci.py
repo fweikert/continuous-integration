@@ -1855,6 +1855,7 @@ def execute_bazel_run(bazel_binary, platform, targets):
             handle_bazel_failure(e, "run")
 
 
+# Be careful when updating this function - it's called from pipelines/bazel-release.yml,
 def remote_caching_flags(platform, accept_cached=True):
     # Only enable caching for untrusted and testing builds, except for trusted MacOS VMs.
     if THIS_IS_TRUSTED and not is_mac():
@@ -1862,24 +1863,6 @@ def remote_caching_flags(platform, accept_cached=True):
     # We don't enable remote caching on the Linux ARM64 machine since it doesn't have access to GCS.
     if platform == "ubuntu2004_arm64":
         return []
-
-    platform_cache_key = [
-        BUILDKITE_ORG.encode("utf-8"),
-        # Whenever the remote cache was known to have been poisoned increase the number below
-        "cache-poisoning-20230803".encode("utf-8"),
-        platform.encode("utf-8"),
-    ]
-
-    if is_mac():
-        platform_cache_key += [
-            # macOS version:
-            subprocess.check_output(["/usr/bin/sw_vers", "-productVersion"]),
-            # Path to Xcode:
-            subprocess.check_output(["/usr/bin/xcode-select", "-p"]),
-            # Xcode version:
-            subprocess.check_output(["/usr/bin/xcodebuild", "-version"]),
-        ]
-
 
     # Use GCS for caching builds running on MacService.
     # Use RBE for caching builds running on GCE.
@@ -1914,18 +1897,12 @@ def remote_caching_flags(platform, accept_cached=True):
         )
     )
 
-    platform_cache_digest = hashlib.sha256()
-    for key in platform_cache_key:
-        eprint("Adding to platform cache key: {}".format(key))
-        platform_cache_digest.update(key)
-        platform_cache_digest.update(b":")
-
     remote_timeout = 3600 if is_mac() else 60
     flags += [
         f"--remote_timeout={remote_timeout}",
         "--remote_max_connections=200",
         '--remote_default_platform_properties=properties:{name:"cache-silo-key" value:"%s"}'
-        % platform_cache_digest.hexdigest(),
+        % get_cache_key(platform),
         "--remote_download_toplevel",
     ]
 
@@ -1933,6 +1910,33 @@ def remote_caching_flags(platform, accept_cached=True):
         flags += ["--noremote_accept_cached"]
 
     return flags
+
+
+def get_cache_key(platform):
+    platform_cache_key = [
+        BUILDKITE_ORG.encode("utf-8"),
+        # Whenever the remote cache was known to have been poisoned increase the number below
+        "cache-poisoning-20230803".encode("utf-8"),
+        platform.encode("utf-8"),
+    ]
+
+    if is_mac():
+        platform_cache_key += [
+            # macOS version:
+            subprocess.check_output(["/usr/bin/sw_vers", "-productVersion"]),
+            # Path to Xcode:
+            subprocess.check_output(["/usr/bin/xcode-select", "-p"]),
+            # Xcode version:
+            subprocess.check_output(["/usr/bin/xcodebuild", "-version"]),
+        ]
+
+    platform_cache_digest = hashlib.sha256()
+    for key in platform_cache_key:
+        eprint("Adding to platform cache key: {}".format(key))
+        platform_cache_digest.update(key)
+        platform_cache_digest.update(b":")
+    
+    return platform_cache_digest.hexdigest()
 
 
 def remote_enabled(flags):
