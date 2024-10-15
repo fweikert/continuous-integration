@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as ubuntu2004-bazel-nojdk
+FROM ubuntu:24.04 as ubuntu2404-bazel-nojdk
 ARG BUILDARCH
 
 ENV DEBIAN_FRONTEND="noninteractive"
@@ -26,15 +26,13 @@ RUN apt-get -y update && \
     lcov \
     less \
     libc++-dev \
-    libncurses5 \
     libssl-dev \
     llvm \
     llvm-dev \
     lsb-release \
     netcat-openbsd \
+    openssh-client \
     python-is-python3 \
-    python2 \
-    python2-dev \
     python3 \
     python3-dev \
     python3-pip \
@@ -54,19 +52,10 @@ RUN apt-get -y update && \
     apt-get -y purge apport && \
     rm -rf /var/lib/apt/lists/*
 
-# Workaround https://bugs.launchpad.net/ubuntu/+source/gcc-9/+bug/2029910
-# TODO: remove when the latest ubuntu:20.04 image has the fix.
-WORKDIR /tempdir
-RUN apt-get -y update && apt-get download libgcc-10-dev
-RUN dpkg -x libgcc-10-dev_10.5.0-1ubuntu1~20.04_amd64.deb .
-RUN cp usr/lib/gcc/x86_64-linux-gnu/10/libtsan_preinit.o /usr/lib/gcc/x86_64-linux-gnu/9/
-RUN rm -rf /tempdir
-WORKDIR /
-
 # Allow using sudo inside the container.
 RUN echo "ALL ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-FROM ubuntu2004-bazel-nojdk AS ubuntu2004-nojdk
+FROM ubuntu2404-bazel-nojdk AS ubuntu2404-nojdk
 
 ### Install Google Cloud SDK.
 ### https://cloud.google.com/sdk/docs/quickstart-debian-ubuntu
@@ -75,44 +64,19 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
     apt-get update -y && apt-get install google-cloud-sdk -y && \
     rm -rf /var/lib/apt/lists/*
 
-### Docker (for legacy rbe_autoconfig)
-RUN apt-get -y update && \
-    apt-get -y install apt-transport-https ca-certificates && \
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
-    add-apt-repository "deb [arch=$TARGETARCH] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" && \
-    apt-get -y update && \
-    apt-get -y install docker-ce && \
-    rm -rf /var/lib/apt/lists/*
-
 # Bazelisk
 RUN LATEST_BAZELISK=$(curl -sSI https://github.com/bazelbuild/bazelisk/releases/latest | grep -i '^location: ' | sed 's|.*/||' | sed $'s/\r//') && \
-    curl -Lo /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/download/${LATEST_BAZELISK}/bazelisk-linux-${TARGETARCH} && \
+    curl -Lo /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/download/${LATEST_BAZELISK}/bazelisk-linux-${BUILDARCH} && \
     chown root:root /usr/local/bin/bazel && \
     chmod 0755 /usr/local/bin/bazel
 
 # Buildifier
 RUN LATEST_BUILDIFIER=$(curl -sSI https://github.com/bazelbuild/buildtools/releases/latest | grep -i '^location: ' | sed 's|.*/||' | sed $'s/\r//') && \
-    curl -Lo /usr/local/bin/buildifier https://github.com/bazelbuild/buildtools/releases/download/${LATEST_BUILDIFIER}/buildifier-linux-${TARGETARCH} && \
+    curl -Lo /usr/local/bin/buildifier https://github.com/bazelbuild/buildtools/releases/download/${LATEST_BUILDIFIER}/buildifier-linux-${BUILDARCH} && \
     chown root:root /usr/local/bin/buildifier && \
     chmod 0755 /usr/local/bin/buildifier
 
-FROM ubuntu2004-bazel-nojdk AS ubuntu2004-bazel-java11
-
-RUN apt-get -y update && \
-    apt-get -y install openjdk-11-jdk-headless && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${BUILDARCH}
-
-FROM ubuntu2004-nojdk AS ubuntu2004-java11
-
-RUN apt-get -y update && \
-    apt-get -y install openjdk-11-jdk-headless && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${BUILDARCH}
-
-FROM ubuntu2004-nojdk AS ubuntu2004
+FROM ubuntu2404-nojdk AS ubuntu2404
 
 RUN apt-get -y update && \
     apt-get -y install openjdk-21-jdk-headless && \
@@ -120,12 +84,18 @@ RUN apt-get -y update && \
 
 ENV JAVA_HOME /usr/lib/jvm/java-21-openjdk-${BUILDARCH}
 
-FROM ubuntu2004 AS ubuntu2004-kythe
+FROM ubuntu2404 AS ubuntu2404-kythe
+
+# kythe 0.0.67 requires GLIBCXX_3.4.32 which isn't available on ubuntu 22.04 by default.
+# Using a test toolchain
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test && \
+    apt-get -y update && \
+    apt-get -y install --only-upgrade libstdc++6 && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN LATEST_KYTHE=v0.0.67 && \
     mkdir /usr/local/kythe && \
     curl -fsSL https://github.com/kythe/kythe/releases/download/${LATEST_KYTHE}/kythe-{$LATEST_KYTHE}.tar.gz | \
     tar xvz --no-same-owner --strip-components 1 --directory /usr/local/kythe && \
-    chmod -R a+r /usr/local/kythe && \
+    chmod -R a+rw /usr/local/kythe && \
     test -f /usr/local/kythe/WORKSPACE
-
