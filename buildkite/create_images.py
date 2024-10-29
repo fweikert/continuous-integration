@@ -133,6 +133,7 @@ def create_instance(instance_name, params):
             project=params["project"],
             zone=params["zone"],
             machine_type=params.get("machine_type", DEFAULT_MACHINE_TYPE),
+            network=params.get("network", "default"),
             metadata_from_file=startup_script,
             boot_disk_type="pd-ssd",
             boot_disk_size=params.get("boot_disk_size", DEFAULT_BOOT_DISK_SIZE),
