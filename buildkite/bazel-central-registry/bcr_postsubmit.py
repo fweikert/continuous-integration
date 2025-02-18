@@ -53,7 +53,7 @@ def get_output(command):
       )
 
 def check_and_write_all_attestations():
-    print_expanded_group(":cop: Check & write attestations")
+    print_expanded_group(":cop::copybara: Check & write attestations")
     paths = get_attestations_json_paths()
     if not paths:
         # TODO: turn this into an error
