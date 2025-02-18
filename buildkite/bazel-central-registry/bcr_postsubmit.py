@@ -23,13 +23,86 @@ This script does one thing:
   - Sync the bazel_registry.json and modules/ directory in the main branch of the BCR to https://bcr.bazel.build
 """
 
+import base64
+import hashlib
+import json
+import os
+import requests
+import shutil
 import subprocess
 import sys
 
 BCR_BUCKET = "gs://bcr.bazel.build/"
+FILES_WITH_ATTESTATIONS = ("source.json", "MODULE.bazel")
+
+
+class AttestationError(Exception):
+    """Raised when there is a problem wrt attestations."""
+
+def eprint(*args, **kwargs):
+    print(*args, flush=True, file=sys.stderr, **kwargs)
 
 def print_expanded_group(name):
     print("\n\n+++ {0}\n\n".format(name))
+
+def get_output(command):
+    return subprocess.check_output(
+          command,
+          encoding='utf-8',
+          stderr=subprocess.PIPE,
+      )
+
+def check_and_write_all_attestations():
+    print_expanded_group(":cop: Check & write attestations")
+    paths = get_attestations_json_paths()
+    if not paths:
+        # TODO: turn this into an error
+        eprint("No attestation.json files were changed.")
+        return
+    
+    for p in paths:
+        check_and_write_module_attestations(p)
+
+def get_attestations_json_paths():
+    commit = os.getenv("BUILDKITE_COMMIT")
+    cwd = os.getcwd()
+    paths = get_output(f"git diff-tree --no-commit-id --name-only {commit} -r")
+    return [os.path.join(cwd, p) for p in paths.split("\n") if p.endswith("/attestations.json")]
+
+def check_and_write_module_attestations(attestations_json_path):
+    dest_dir = os.path.dirname(attestations_json_path)
+    with open(attestations_json_path, "rb") as af:
+        metadata = json.loads(af.read())
+    
+    for f in FILES_WITH_ATTESTATIONS:
+        try:
+            entry = metadata["attestations"][f]
+            check_and_write_single_attestation(entry["url"], entry["integrity"], dest_dir)
+        except Exception as ex:
+            raise AttestationError(f"{attestations_json_path} - {f}: {ex}") from ex
+
+def check_and_write_single_attestation(url, integrity, dest_dir):
+    response = requests.get(url)
+    try:
+        raw_content = response.content
+    finally:
+        response.close()
+
+    check_integrity(raw_content, integrity)
+
+    dest = os.path.join(dest_dir, os.path.basename(url))
+    with open(dest, "wb") as f:
+        f.write(raw_content)
+
+def check_integrity(data, expected):
+    algorithm, _, _ = expected.partition("-")
+    assert algorithm in {"sha224", "sha256", "sha384", "sha512"}, "Unsupported SRI algorithm"
+
+    hash = getattr(hashlib, algorithm)(data)
+    encoded = base64.b64encode(hash.digest()).decode()
+    actual = f"{algorithm}-{encoded}"
+    if actual != expected:
+        raise AttestationError(f"Expected checksum {expected}, got {actual}")
 
 def sync_bcr_content():
     print_expanded_group(":gcloud: Sync BCR content")
@@ -37,10 +110,12 @@ def sync_bcr_content():
         ["gsutil", "-h", "Cache-Control:no-cache", "cp", "./bazel_registry.json", BCR_BUCKET]
     )
     subprocess.check_output(
-        ["gsutil", "-h", "Cache-Control:no-cache", "-m", "rsync", "-d", "-r", "./modules", BCR_BUCKET + "modules"]
+        ["gsutil", "-h", "Cache-Control:no-cache", "-m", "rsync", "-r", "./modules", BCR_BUCKET + "modules"]
     )
 
 def main():
+    check_and_write_all_attestations()
+    # TODO: sync anyway?
     sync_bcr_content()
     return 0
 
