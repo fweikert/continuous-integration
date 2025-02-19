@@ -49,7 +49,7 @@ def get_output(command):
     return subprocess.check_output(
           command,
           encoding='utf-8',
-          stderr=subprocess.PIPE,
+          stdout=subprocess.PIPE,
       )
 
 def check_and_write_all_attestations():
@@ -115,7 +115,6 @@ def sync_bcr_content():
 
 def main():
     check_and_write_all_attestations()
-    # TODO: sync anyway?
     sync_bcr_content()
     return 0
 
