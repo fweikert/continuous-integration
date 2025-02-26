@@ -32,7 +32,7 @@ import shutil
 import subprocess
 import sys
 
-BCR_BUCKET = "gs://bcr.bazel.build/"
+BCR_BUCKET = "gs://fwe-bcr-test/"
 ATTESTATION_METADATA_FILE = "attestations.json"
 FILES_WITH_ATTESTATIONS = ("source.json", "MODULE.bazel")
 
