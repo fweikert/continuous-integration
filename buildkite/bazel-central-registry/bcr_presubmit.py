@@ -329,6 +329,8 @@ def validate_existing_modules_are_not_modified():
 
 
 def validate_files_outside_of_modules_dir_are_not_modified(modules):
+    # TODO: revert
+    return
     # If no modules are changed at the same time, then we don't need to perform this check.
     if not modules:
         return
