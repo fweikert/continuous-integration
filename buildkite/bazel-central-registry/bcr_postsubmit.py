@@ -51,7 +51,7 @@ def get_output(command):
           command,
           encoding='utf-8',
           stdout=subprocess.PIPE,
-      )
+      ).stdout
 
 def check_and_write_all_attestations():
     print_expanded_group(":cop::copybara: Check & write attestations")
