@@ -70,6 +70,8 @@ def get_target_modules():
     modules = set()
     # Matching modules/<name>/<version>/
     for line in output.decode("utf-8").split():
+        if "bcr-module-provenance" not in line:
+            continue
         s = re.match(r"modules\/([^\/]+)\/([^\/]+)\/", line)
         if s:
             modules.add(s.groups())
