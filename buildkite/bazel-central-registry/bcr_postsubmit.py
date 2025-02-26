@@ -33,6 +33,7 @@ import subprocess
 import sys
 
 BCR_BUCKET = "gs://bcr.bazel.build/"
+ATTESTATION_METADATA_FILE = "attestations.json"
 FILES_WITH_ATTESTATIONS = ("source.json", "MODULE.bazel")
 
 
@@ -57,7 +58,7 @@ def check_and_write_all_attestations():
     paths = get_attestations_json_paths()
     if not paths:
         # TODO: turn this into an error
-        eprint("No attestation.json files were changed.")
+        eprint(f"No {ATTESTATION_METADATA_FILE} files were changed.")
         return
     
     for p in paths:
@@ -67,7 +68,7 @@ def get_attestations_json_paths():
     commit = os.getenv("BUILDKITE_COMMIT")
     cwd = os.getcwd()
     paths = get_output(f"git diff-tree --no-commit-id --name-only {commit} -r")
-    return [os.path.join(cwd, p) for p in paths.split("\n") if p.endswith("/attestations.json")]
+    return [os.path.join(cwd, p) for p in paths.split("\n") if p.endswith(f"/{ATTESTATION_METADATA_FILE}")]
 
 def check_and_write_module_attestations(attestations_json_path):
     dest_dir = os.path.dirname(attestations_json_path)
