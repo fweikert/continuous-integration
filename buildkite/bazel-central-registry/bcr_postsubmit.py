@@ -47,7 +47,7 @@ def print_expanded_group(name):
     print("\n\n+++ {0}\n\n".format(name))
 
 def get_output(command):
-    return subprocess.check_output(
+    return subprocess.run(
           command,
           encoding='utf-8',
           stdout=subprocess.PIPE,
