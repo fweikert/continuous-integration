@@ -39,9 +39,6 @@ FILES_WITH_ATTESTATIONS = ("source.json", "MODULE.bazel")
 class AttestationError(Exception):
     """Raised when there is a problem wrt attestations."""
 
-def eprint(*args, **kwargs):
-    print(*args, flush=True, file=sys.stderr, **kwargs)
-
 def print_expanded_group(name):
     print("\n\n+++ {0}\n\n".format(name))
 
@@ -57,7 +54,7 @@ def check_and_write_all_attestations():
     paths = get_attestations_json_paths()
     if not paths:
         # TODO: turn this into an error
-        eprint(f"No {ATTESTATION_METADATA_FILE} files were changed.")
+        print(f"No {ATTESTATION_METADATA_FILE} files were changed.")
         return
     
     for p in paths:
@@ -70,6 +67,7 @@ def get_attestations_json_paths():
     return [os.path.join(cwd, p) for p in paths.split("\n") if p.endswith(f"/{ATTESTATION_METADATA_FILE}")]
 
 def check_and_write_module_attestations(attestations_json_path):
+    print(f"Checking {attestations_json_path}...")
     dest_dir = os.path.dirname(attestations_json_path)
     with open(attestations_json_path, "rb") as af:
         metadata = json.loads(af.read())
@@ -81,7 +79,10 @@ def check_and_write_module_attestations(attestations_json_path):
         except Exception as ex:
             raise AttestationError(f"{attestations_json_path} - {f}: {ex}") from ex
 
+    print("Done!")
+
 def check_and_write_single_attestation(url, integrity, dest_dir):
+    print(f"\tFound attestation @ {url}")
     response = requests.get(url)
     try:
         raw_content = response.content
@@ -89,8 +90,10 @@ def check_and_write_single_attestation(url, integrity, dest_dir):
         response.close()
 
     check_integrity(raw_content, integrity)
+    print("\t\tIntegrity: OK")
 
     dest = os.path.join(dest_dir, get_canonical_basename(url))
+    print(f"\t\tWriting attestation to {dest}...")
     with open(dest, "wb") as f:
         f.write(raw_content)
 
