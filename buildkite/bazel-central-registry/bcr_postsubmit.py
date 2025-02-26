@@ -90,7 +90,7 @@ def check_and_write_single_attestation(url, integrity, dest_dir):
 
     check_integrity(raw_content, integrity)
 
-    dest = os.path.join(dest_dir, os.path.basename(url))
+    dest = os.path.join(dest_dir, get_canonical_basename(url))
     with open(dest, "wb") as f:
         f.write(raw_content)
 
@@ -102,7 +102,20 @@ def check_integrity(data, expected):
     encoded = base64.b64encode(hash.digest()).decode()
     actual = f"{algorithm}-{encoded}"
     if actual != expected:
-        raise AttestationError(f"Expected checksum {expected}, got {actual}")
+        raise AttestationError(f"Expected checksum {expected}, got {actual}.")
+
+# Attestation files in GitHub releases may have prefixes in their basename
+# to avoid conflicts when multiple modules are released together
+# (e.g. rules_python and rules_python_gazelle_plugin).
+# In this case we need to get the canonical basename.
+def get_canonical_basename(url):
+    actual_basename = os.path.basename(url)
+    for f in FILES_WITH_ATTESTATIONS:
+        if f in actual_basename:
+            return f"{f}.intoto.jsonl"
+    
+    raise AttestationError(f"Invalid basename of {url}.")
+
 
 def sync_bcr_content():
     print_expanded_group(":gcloud: Sync BCR content")
