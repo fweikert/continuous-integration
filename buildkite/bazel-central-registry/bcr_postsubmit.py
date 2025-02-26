@@ -67,7 +67,7 @@ def check_and_write_all_attestations():
 def get_attestations_json_paths():
     commit = os.getenv("BUILDKITE_COMMIT")
     cwd = os.getcwd()
-    paths = get_output(f"git diff-tree --no-commit-id --name-only {commit} -r")
+    paths = get_output(["git", "diff-tree", "--no-commit-id", "--name-only", commit, "-r"])
     return [os.path.join(cwd, p) for p in paths.split("\n") if p.endswith(f"/{ATTESTATION_METADATA_FILE}")]
 
 def check_and_write_module_attestations(attestations_json_path):
