@@ -20,6 +20,11 @@
 # Fail when any command in a pipe fails.
 set -euxo pipefail
 
+# Try to fetch timestamp, default to empty if curl fails
+CREATION_TS=$(curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/creation-timestamp || echo "")
+# Try to convert date, default to '0' if date fails
+BOOT_TIME_S=$(date -d "$CREATION_TS" +%s 2>/dev/null || echo "0")
+
 ### Prevent dpkg / apt-get / debconf from trying to access stdin.
 export DEBIAN_FRONTEND="noninteractive"
 
@@ -58,7 +63,7 @@ systemctl start docker
 gcloud auth configure-docker --quiet
 sudo -H -u buildkite-agent gcloud auth configure-docker --quiet
 
-QUEUE="default"
+QUEUE="metrics-test"
 if [[ "$(uname -m)" == "aarch64" ]]; then
   QUEUE="arm64"
 fi
@@ -67,7 +72,7 @@ fi
 cat > /etc/buildkite-agent/buildkite-agent.cfg <<EOF
 token="${BUILDKITE_TOKEN}"
 name="%hostname"
-tags="queue=${QUEUE},kind=docker,os=linux"
+tags="boot_time_s=${BOOT_TIME_S},queue=${QUEUE},kind=docker,os=linux"
 build-path="/var/lib/buildkite-agent/builds"
 git-mirrors-path="/var/lib/gitmirrors"
 git-clone-mirror-flags="-v --bare"
@@ -99,24 +104,19 @@ case $(hostname -f) in
         ;;
 esac
 
-docker pull "gcr.io/$PREFIX/rockylinux8" &
-docker pull "gcr.io/$PREFIX/rockylinux8-java11" &
 docker pull "gcr.io/$PREFIX/rockylinux8-java11-devtoolset10" &
 docker pull "gcr.io/$PREFIX/rockylinux8-releaser" &
 docker pull "gcr.io/$PREFIX/debian10-java11" &
 docker pull "gcr.io/$PREFIX/debian11-java17" &
 docker pull "gcr.io/$PREFIX/ubuntu1804-java11" &
-docker pull "gcr.io/$PREFIX/ubuntu2004-java11" &
 docker pull "gcr.io/$PREFIX/ubuntu2004" &
-docker pull "gcr.io/$PREFIX/ubuntu2004-kythe" &
-docker pull "gcr.io/$PREFIX/ubuntu2204-kythe" &
-docker pull "gcr.io/$PREFIX/ubuntu2404-kythe" &
-docker pull "gcr.io/$PREFIX/ubuntu2204-java17" &
+docker pull "gcr.io/$PREFIX/ubuntu2004-java11-kythe" &
 docker pull "gcr.io/$PREFIX/ubuntu2204" &
+docker pull "gcr.io/$PREFIX/ubuntu2204-java17" &
 docker pull "gcr.io/$PREFIX/ubuntu2404" &
+docker pull "gcr.io/$PREFIX/ubuntu2404-kythe" &
 docker pull "gcr.io/$PREFIX/fedora39-java17" &
 docker pull "gcr.io/$PREFIX/fedora40-java21" &
-docker pull "gcr.io/$PREFIX/fedora43-java25" &
 wait
 
 ### Start the Buildkite agent service.
