@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-bazel version
+#bazel version
 
-bazel build //src/main/java/com/google/devtools/build/lib:gen_mdx_reference_docs
+#bazel build //src/main/java/com/google/devtools/build/lib:gen_mdx_reference_docs
 
-unzip bazel-bin/src/main/java/com/google/devtools/build/lib/mdx-reference-docs.zip -d "$DOCS_DIR"
+#unzip bazel-bin/src/main/java/com/google/devtools/build/lib/mdx-reference-docs.zip -d "$DOCS_DIR"
 
 cd "$DOCS_DIR"
 
@@ -13,6 +13,6 @@ cd "$DOCS_DIR"
 curl -sS "$DOCS_JSON_URL" -o docs.json
 
 # https://www.mintlify.com/docs/installation#validate-documentation-build
-mint validate
+/usr/local/bin/mint validate
 
 # TODO: call `mint broken-links``
