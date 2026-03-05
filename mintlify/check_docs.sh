@@ -1,7 +1,9 @@
-#!/bin/sh
-set -euxo pipefail
+#!/bin/bash
+set -euo pipefail
 
-bazelisk build //src/main/java/com/google/devtools/build/lib:gen_mdx_reference_docs
+bazel version
+
+bazel build //src/main/java/com/google/devtools/build/lib:gen_mdx_reference_docs
 
 unzip bazel-bin/src/main/java/com/google/devtools/build/lib/mdx-reference-docs.zip -d "$DOCS_DIR"
 
