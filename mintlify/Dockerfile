@@ -10,6 +10,9 @@ RUN apk --no-cache add curl
 ENV DOCS_DIR="docs"
 ENV DOCS_JSON_URL="https://raw.githubusercontent.com/bazel-contrib/bazel-docs/refs/heads/main/docs.json"
 
+RUN curl -sS https://github.com/bazelbuild/bazelisk/releases/download/v1.28.1/bazelisk-linux-amd64 -o /usr/local/bin/bazelisk
+RUn chmod 0755 /usr/local/bin/bazelisk
+
 COPY --chown=root:root check_docs.sh /usr/local/bin/check_docs.sh
 
 RUN chmod 0755 /usr/local/bin/check_docs.sh
