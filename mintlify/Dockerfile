@@ -1,8 +1,13 @@
 # Use the official Node.js LTS image as the base, which includes npm
 FROM node:lts-alpine
 
-# Install the mint package globally
-RUN npm i -g mint
+WORKDIR /usr/local/bin
+
+COPY package.json .
+
+RUN npm cache clear --force
+RUN npm install --package-lock-only
+#RUN npm install
 
 RUN apk --no-cache add curl
 
