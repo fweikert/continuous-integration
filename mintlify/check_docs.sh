@@ -1,10 +1,12 @@
 #!/bin/sh
 set -euxo pipefail
 
+source "$(dirname "$0")/download_json.sh"
+
 cd "$DOCS_DIR"
 
-# Fetch the docs.json file at HEAD, otherwise mintlify fails.
-curl -sS "$DOCS_JSON_URL" -o docs.json
+# Fetch docs.json and all included files at HEAD, otherwise mintlify fails.
+download_json "$DOCS_JSON_URL"
 
 # https://www.mintlify.com/docs/installation#validate-documentation-build
 # If validation fails, we annotate the build and exit.

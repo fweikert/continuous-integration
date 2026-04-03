@@ -12,6 +12,10 @@ ENV DOCS_JSON_URL="https://raw.githubusercontent.com/bazel-contrib/bazel-docs/re
 
 COPY --chown=root:root annotation.html /usr/local/annotation.html
 
+COPY --chown=root:root download_json.sh /usr/local/bin/download_json.sh
+
+RUN chmod 0755 /usr/local/bin/download_json.sh
+
 COPY --chown=root:root check_docs.sh /usr/local/bin/check_docs.sh
 
 RUN chmod 0755 /usr/local/bin/check_docs.sh
